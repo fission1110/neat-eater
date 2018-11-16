@@ -102,11 +102,11 @@ class Sim():
         output = []
         if action[0] > .5:
             output.append('u')
-        if action[0] < .5:
-            output.append('d')
         if action[1] > .5:
+            output.append('d')
+        if action[2] > .5:
             output.append('r')
-        if action[1] < .5:
+        if action[3] > .5:
             output.append('l')
         return output
 
@@ -235,7 +235,7 @@ def run():
     pop.add_reporter(stats)
     pop.add_reporter(neat.StdOutReporter(True))
 
-    pe = neat.ParallelEvaluator(1, eval_genome)
+    pe = neat.ParallelEvaluator(5, eval_genome)
     winner = pop.run(pe.evaluate)
 
     # Save the winner.
