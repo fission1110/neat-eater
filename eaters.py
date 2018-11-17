@@ -14,7 +14,7 @@ class Sprite(object):
         self.surface = pygame.Surface((10,10))
         self.rect = self.surface.get_rect()
         self._draw()
-        self.set_loc((random.randrange(0,self.screen.get_width()), random.randrange(0,self.screen.get_height())))
+        self.set_loc((random.randrange(0,self.screen.get_width() - self.rect.width), random.randrange(0,self.screen.get_height() - self.rect.height)))
 
     def move(self, direction):
         if 'u' in direction:
@@ -68,7 +68,7 @@ class Food(Sprite):
 class Sim():
     def __init__(self):
         pygame.init()
-        size = 300, 300
+        size = 200, 200
         self.bg_color = pygame.Color('black')
         self.screen = pygame.display.set_mode(size)
         FOODS_COUNT = 10
@@ -81,7 +81,7 @@ class Sim():
         self.sprites = self.foods + self.bugs
         self.t = 0
 
-    def step(self, action):
+    def step(self, action, blit = False):
         for event in pygame.event.get():
             if event.type == pygame.QUIT: sys.exit()
         self.screen.fill(self.bg_color)
@@ -91,10 +91,10 @@ class Sim():
         for bug in self.bugs:
             self.foods = bug.check_eat(self.foods)
 
-        for sprite in self.sprites:
-            sprite._blit()
-
-        pygame.display.flip()
+        if blit:
+            for sprite in self.sprites:
+                sprite._blit()
+            pygame.display.flip()
         self.t += 1
 
 
@@ -188,22 +188,22 @@ class Sim():
     def get_fitness(self):
         return self.bugs[0].energy
 
-#sim = Sim()
-#while 1:
-#	sim.step([1,0])
-#	print(sim.get_scaled_state())
-#	time.sleep(.01)
-
 
 RUNS_PER_NET = 5
-SIMULATION_SECONDS = 300.0
+SIMULATION_SECONDS = 400.0
 TIME_CONST = .01
 def eval_genome(genome, config):
     global SIMULATION_SECONDS
     net = neat.ctrnn.CTRNN.create(genome, config, TIME_CONST)
 
     fitnesses = []
-    for runs in range(RUNS_PER_NET):
+    for run in range(RUNS_PER_NET):
+        if run == 1:
+            blit = True
+        else:
+            blit = False
+
+
         sim = Sim()
         net.reset()
 
@@ -213,14 +213,16 @@ def eval_genome(genome, config):
 
             action = net.advance(inputs, TIME_CONST, TIME_CONST)
 
-            sim.step(sim.get_descrete_action(action))
+            sim.step(sim.get_descrete_action(action), blit)
 
             fitness = sim.get_fitness()
+            fitnesses.append(fitness)
     SIMULATION_SECONDS += 1
-    fitnesses.append(fitness)
-    return(max(fitnesses))
+    if SIMULATION_SECONDS % 100 == 0:
+        print('SIMULATION_SECONDS: %s' % (SIMULATION_SECONDS))
+    return(sum(fitnesses)/len(fitnesses))
 
-def eval_gnomes(genomes, config):
+def eval_genomes(genomes, config):
     for gnome_id, genome in genomes:
         gnome.fitness = eval_gnome(gnome, config)
 
